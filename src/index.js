@@ -108,25 +108,29 @@ FirebaseOnRest.prototype.once = function(cb) {
   var body = self._query;
   self._query = {};
   rest.get(self, body, function(err, data) {
+    if(data && data.error) return console.log(data.error);
+
     (cb || noop)(new DataSnapshot(self, data));
   });
 }
 
 FirebaseOnRest.prototype.set = function(data, cb) {
-  var self = this;
-  rest.put(self, data, function(err, data) {
+  rest.put(this, data, function(err, data) {
+    if(err || (data && data.error)) return (cb || noop)(err || data);
   });
 }
 
 FirebaseOnRest.prototype.update = function(data) {
-  var self = this;
-  rest.patch(self, data, function(err, data) {
+  rest.patch(this, data, function(err, data) {
+    if(err || (data && data.error)) return (cb || noop)(err || data);
   });
 }
 
 
 FirebaseOnRest.prototype.remove = function(cb) {
-  rest.delete(this, null, cb);
+  rest.delete(this, null, function(err, data) {
+    if(err || (data && data.error)) return (cb || noop)(err || data);
+  });
 }
 
 function noop() {}
@@ -154,6 +158,7 @@ DataSnapshot.prototype.numChildren = function() {
 
 function restRequest(method) {
   return function(ref, data, cb) {
+    data = data || {};
     var opt = {
       url: ref.uri + '.json',
       method: method,
