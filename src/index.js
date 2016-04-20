@@ -94,7 +94,7 @@ FirebaseOnRest.prototype.equalTo = function(value) {
 
 FirebaseOnRest.prototype.push = function(data, cb) {
   var ref = this.child(tuid());
-  if(!data) return new FirebaseOnRest(ref).setAuth(this._auth);
+  if(!data) return ref;
 
   ref.set(data, cb);
 }
