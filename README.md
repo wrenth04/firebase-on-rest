@@ -1,9 +1,17 @@
 ## FirebaseOnRest
 - new FirebaseOnRest(uri)
+- key()
+- root()
+- parent()
+- toString()
 - child(path)
-- once(callback)
 - set(data, callback)
 - push(data, callback)
+- setAuth(auth) // auth token form generator
+- unauth()
+
+## Query
+- once(callback)
 - remove(callback)
 - orderByKey()
 - orderByChild(path)
@@ -15,8 +23,10 @@
 - equalTo(value)
 
 ## DataSnapshot
+- key()
 - ref()
 - val()
+- numChildren()
 
 ---
 - [Firebase Web Api](https://www.firebase.com/docs/web/api/firebase)

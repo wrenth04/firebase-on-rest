@@ -6,12 +6,41 @@ var rest = {
   get: restRequest('GET'),
   post: restRequest('POST'),
   put: restRequest('PUT'),
+  patch: restRequest('PATCH'),
   delete: restRequest('DELETE')
 };
 
 function FirebaseOnRest(uri) {
-  this.uri = uri;
+  this.uri = uri.replace(/\/$/, '');
   this._query = {};
+}
+
+FirebaseOnRest.prototype.setAuth = function(auth) {
+  if(auth) this._auth = auth;
+  return this;
+}
+
+FirebaseOnRest.prototype.unauth = function() {
+  delete this._auth;
+  return this;
+}
+
+FirebaseOnRest.prototype.toString = function() {
+  return this.uri;
+}
+
+FirebaseOnRest.prototype.key = function() {
+  return this.uri.split('/').pop();
+}
+
+FirebaseOnRest.prototype.root = function() {
+  return new FirebaseOnRest('https://' + this.uri.split('/')[2]).setAuth(this._auth);
+}
+
+FirebaseOnRest.prototype.parent = function() {
+  var s = this.uri.split('/');
+  s.pop();
+  return new FirebaseOnRest(s.join('/')).setAuth(this._auth);
 }
 
 FirebaseOnRest.prototype.orderByChild = function(name) {
@@ -71,26 +100,33 @@ FirebaseOnRest.prototype.push = function(data, cb) {
 }
 
 FirebaseOnRest.prototype.child = function(path) {
-  return new FirebaseOnRest(this.uri + '/' + path);
+  return new FirebaseOnRest(this.uri + '/' + path).setAuth(this._auth);
 }
 
 FirebaseOnRest.prototype.once = function(cb) {
   var self = this;
   var body = self._query;
   self._query = {};
-  rest.get(self.uri, body, function(err, data) {
+  rest.get(self, body, function(err, data) {
     (cb || noop)(new DataSnapshot(self, data));
   });
 }
 
 FirebaseOnRest.prototype.set = function(data, cb) {
   var self = this;
-  rest.put(self.uri, data, function(err, data) {
+  rest.put(self, data, function(err, data) {
   });
 }
 
+FirebaseOnRest.prototype.update = function(data) {
+  var self = this;
+  rest.patch(self, data, function(err, data) {
+  });
+}
+
+
 FirebaseOnRest.prototype.remove = function(cb) {
-  rest.delete(this.uri, null, cb);
+  rest.delete(this, null, cb);
 }
 
 function noop() {}
@@ -101,7 +137,7 @@ function DataSnapshot(ref, data) {
 }
 
 DataSnapshot.prototype.key = function() {
-  return this._key;
+  return this._ref.key();
 }
 
 DataSnapshot.prototype.val = function() {
@@ -112,17 +148,27 @@ DataSnapshot.prototype.ref = function() {
   return this._ref;
 }
 
+DataSnapshot.prototype.numChildren = function() {
+  return this._data ? Object.keys(this._data).length : 0;
+}
+
 function restRequest(method) {
-  return function(uri, data, cb) {
+  return function(ref, data, cb) {
     var opt = {
-      url: uri + '.json',
+      url: ref.uri + '.json',
       method: method,
       json: true
     };
 
-    if(['POST', 'PUT'].indexOf(method) != -1) {
+    if(['POST', 'PUT', 'PATCH'].indexOf(method) != -1) {
+      if(ref._auth) {
+        opt.url += '?auth=' + ref._auth;
+      }
       opt.body = data;
     } else {
+      if(ref._auth) {
+        data.auth = ref._auth;
+      }
       opt.url += body2Query(data);
     }
 
