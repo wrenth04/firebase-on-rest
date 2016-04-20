@@ -94,7 +94,7 @@ FirebaseOnRest.prototype.equalTo = function(value) {
 
 FirebaseOnRest.prototype.push = function(data, cb) {
   var ref = this.child(tuid());
-  if(!data) return ref;
+  if(!data) return new FirebaseOnRest(ref).setAuth(this._auth);
 
   ref.set(data, cb);
 }
@@ -120,12 +120,11 @@ FirebaseOnRest.prototype.set = function(data, cb) {
   });
 }
 
-FirebaseOnRest.prototype.update = function(data) {
+FirebaseOnRest.prototype.update = function(data, cb) {
   rest.patch(this, data, function(err, data) {
     if(err || (data && data.error)) return (cb || noop)(err || data);
   });
 }
-
 
 FirebaseOnRest.prototype.remove = function(cb) {
   rest.delete(this, null, function(err, data) {
