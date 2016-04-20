@@ -1,6 +1,6 @@
 {
   "name": "firebase-on-rest",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Firebase API base on REST",
   "main": "src/index.js",
   "scripts": {

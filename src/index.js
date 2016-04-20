@@ -10,9 +10,10 @@ var rest = {
   delete: restRequest('DELETE')
 };
 
-function FirebaseOnRest(uri) {
+function FirebaseOnRest(uri, auth) {
   this.uri = uri.replace(/\/$/, '');
   this._query = {};
+  this.setAuth(auth);
 }
 
 FirebaseOnRest.prototype.setAuth = function(auth) {
@@ -34,13 +35,13 @@ FirebaseOnRest.prototype.key = function() {
 }
 
 FirebaseOnRest.prototype.root = function() {
-  return new FirebaseOnRest('https://' + this.uri.split('/')[2]).setAuth(this._auth);
+  return new FirebaseOnRest('https://' + this.uri.split('/')[2], this._auth);
 }
 
 FirebaseOnRest.prototype.parent = function() {
   var s = this.uri.split('/');
   s.pop();
-  return new FirebaseOnRest(s.join('/')).setAuth(this._auth);
+  return new FirebaseOnRest(s.join('/'), this._auth);
 }
 
 FirebaseOnRest.prototype.orderByChild = function(name) {
@@ -100,7 +101,7 @@ FirebaseOnRest.prototype.push = function(data, cb) {
 }
 
 FirebaseOnRest.prototype.child = function(path) {
-  return new FirebaseOnRest(this.uri + '/' + path).setAuth(this._auth);
+  return new FirebaseOnRest(this.uri + '/' + path, this._auth);
 }
 
 FirebaseOnRest.prototype.once = function(cb) {
@@ -108,31 +109,34 @@ FirebaseOnRest.prototype.once = function(cb) {
   var body = self._query;
   self._query = {};
   rest.get(self, body, function(err, data) {
-    if(data && data.error) return console.log(data.error);
+    if(err) return console.log(err);
 
     (cb || noop)(new DataSnapshot(self, data));
   });
 }
 
 FirebaseOnRest.prototype.set = function(data, cb) {
-  rest.put(this, data, function(err, data) {
-    if(err || (data && data.error)) return (cb || noop)(err || data);
-  });
+  rest.put(this, data, onError(cb));
 }
 
 FirebaseOnRest.prototype.update = function(data, cb) {
-  rest.patch(this, data, function(err, data) {
-    if(err || (data && data.error)) return (cb || noop)(err || data);
-  });
+  rest.patch(this, data, onError(cb));
 }
 
 FirebaseOnRest.prototype.remove = function(cb) {
-  rest.delete(this, null, function(err, data) {
-    if(err || (data && data.error)) return (cb || noop)(err || data);
-  });
+  rest.delete(this, null, onError(cb));
 }
 
 function noop() {}
+
+function onError(cb) {
+  return function(err) {
+    if(err) {
+      console.log(err.error);
+      (cb || noop)(err);
+    }
+  };
+}
 
 function DataSnapshot(ref, data) {
   this._ref = ref;
@@ -157,6 +161,7 @@ DataSnapshot.prototype.numChildren = function() {
 
 function restRequest(method) {
   return function(ref, data, cb) {
+    cb = cb || noop;
     data = data || {};
     var opt = {
       url: ref.uri + '.json',
@@ -176,8 +181,12 @@ function restRequest(method) {
       opt.url += body2Query(data);
     }
 
-    request(opt, function(err, body, json) {
-      (cb || noop)(err, json);
+    request(opt, function(err, res, json) {
+      if(res.statusCode > 300) {
+        err = json;
+        json = null;
+      }
+      cb(err, json);
     });
   };
 }
