@@ -118,7 +118,8 @@ FirebaseOnRest.prototype.child = function(path) {
   return new FirebaseOnRest(this.uri + '/' + path, this._auth);
 }
 
-FirebaseOnRest.prototype.once = function(cb) {
+FirebaseOnRest.prototype.once = function(event, cb) {
+  if(event !== 'value') return;
   var self = this;
   var body = self._query;
   self._query = {};
