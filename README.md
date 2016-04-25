@@ -11,7 +11,7 @@
 - unauth()
 
 ## Query
-- once(callback)
+- once(event, callback)
 - remove(callback)
 - orderByKey()
 - orderByChild(path)
