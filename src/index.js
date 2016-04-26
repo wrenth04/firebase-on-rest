@@ -1,5 +1,4 @@
 var request = require('request');
-var EventSource = require('eventsource');
 var tuid = require('timer-uid').tuid;
 var body2Query = require('body-to-query').body2Query;
 
@@ -15,19 +14,6 @@ function FirebaseOnRest(uri, auth) {
   this.uri = uri.replace(/\/$/, '');
   this._query = {};
   this.setAuth(auth);
-}
-
-FirebaseOnRest.prototype.on = function(type, cb) {
-  var self = this;
-  cb = cb || noop;
-  var es = new EventSource(this.uri + '.json');
-  es.onerror = function(err) {
-    console.log('onerror');
-    console.log(err);
-  }
-  es.addEventListener(type, function(data) {
-    cb(new DataSnapshot(self, JSON.parse(data.data).data));
-  });
 }
 
 FirebaseOnRest.prototype.setAuth = function(auth) {
